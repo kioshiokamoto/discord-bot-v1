@@ -1,40 +1,51 @@
-import Discord from 'discord.js';
-import dotenv from 'dotenv';
-dotenv.config();
+const Discord = require('discord.js')
+const fs = require('fs')
+require('dotenv').config()
+
 
 const client = new Discord.Client({
 	partials: ['MESSAGE', 'REACTION', 'CHANNEL', 'USER'],
 });
 
+const prefix = '.';
+
 client.login(process.env.BOT_TOKEN);
 
-client.on('ready', () => {
+client.once('ready', () => {
 	console.log('Se inicializa BOT!');
 });
 
-const bromas = [
-	'Soy buenisimo jugando csgo',
-	'Bonita noooche, bonita noooche',
-	'Uyyyy le hice 2 de dmg en 1',
-	'Si me matas, me muero',
-	'Si me votas, me voy',
-];
-const csgo = [
-	'Pero coneeectate!',
-];
 
-client.on('message', (msg) => {
-	if (msg.content === '.broma') {
-		msg.channel.send(bromas[Math.floor(Math.random() * bromas.length)]);
+
+client.commands = new Discord.Collection();
+
+const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`)
+    client.commands.set(command.name, command);
+}
+
+client.on('message', (message) => {
+	if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+	//Argumentos
+	const args = message.content.slice(prefix.length).split(/ +/);
+	//Comando
+	const command = args.shift().toLocaleLowerCase();
+
+	if (command === 'broma') {
+        client.commands.get('broma').execute(message, args);
 	}
-    if (msg.content === '.csgo') {
-		msg.channel.send(csgo[Math.floor(Math.random() * csgo.length)]);
+	if (command === 'csgo') {
+		client.commands.get('csgo').execute(message, args);
 	}
-    if (msg.content === '!cbazcode') {
-		msg.channel.send('Suscribete a: https://www.youtube.com/channel/UCs1DHnQij0wp0lP1V96rukg');
+	if (command === 'cbazcode') {
+		client.commands.get('cbazcode').execute(message, args);
+		//Para responder a usuario
+		//message.reply('Preparate para el evento 300 subs')
 	}
 });
-
 
 //Agregar
 client.on('messageReactionAdd', async (reaction, user) => {
